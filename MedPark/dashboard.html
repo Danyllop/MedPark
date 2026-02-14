@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Med Park</title>
+    <link rel="icon" type="image/x-icon" href="assets/Icon.ico">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- SQL.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Script Protection -->
+    <script>
+        // Immediate session check to prevent flickering
+        if (!sessionStorage.getItem('currentUser')) {
+            window.location.href = 'index.html';
+        }
+    </script>
+</head>
+
+<body>
+    <!-- Main Application -->
+    <div id="app-container" class="app-container" style="display: flex;">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo-container ps-0 text-center">
+                <img src="assets/logo_partners.png" alt="Logos" class="img-fluid" style="max-height: 50px;">
+                <!-- <div class="logo-icon">EH</div>
+                <h1>Hosp. Parking</h1> -->
+            </div>
+
+            <nav class="nav-menu">
+                <button class="nav-item active" data-target="dashboard">
+                    <span class="icon"><i class="fas fa-chart-pie"></i></span>
+                    Dashboard
+                </button>
+                <button class="nav-item" data-target="employees">
+                    <span class="icon"><i class="fas fa-users"></i></span>
+                    Funcionários
+                </button>
+                <button class="nav-item" data-target="vehicles">
+                    <span class="icon"><i class="fas fa-car"></i></span>
+                    Veículos
+                </button>
+                <button class="nav-item" data-target="vagas">
+                    <span class="icon"><i class="fas fa-square-parking"></i></span>
+                    Gestão de Vagas
+                </button>
+                <button class="nav-item" data-target="prestadores">
+                    <span class="icon"><i class="fas fa-hard-hat"></i></span>
+                    Prestadores
+                </button>
+                <button class="nav-item" data-target="portaria-a">
+                    <span class="icon"><i class="fas fa-archway"></i></span>
+                    Portaria A
+                </button>
+                <button class="nav-item" data-target="portaria-e">
+                    <span class="icon"><i class="fas fa-archway"></i></span>
+                    Portaria E
+                </button>
+                <button class="nav-item" data-target="infracoes">
+                    <span class="icon"><i class="fas fa-exclamation-triangle"></i></span>
+                    Infrações
+                </button>
+                <button class="nav-item" data-target="relatorios">
+                    <span class="icon"><i class="fas fa-file-invoice"></i></span>
+                    Relatórios
+                </button>
+                <button class="nav-item" data-target="users" id="nav-users" style="display: none;">
+                    <span class="icon"><i class="fas fa-users-cog"></i></span>
+                    Gestão de Usuários
+                </button>
+                <!-- Footer removed -->
+            </nav>
+
+            <div class="user-profile">
+                <div class="avatar">U</div>
+                <div class="user-info">
+                    <span class="name" id="user-display-name">Carregando...</span>
+                    <span class="role" id="user-display-role">...</span>
+                </div>
+                <button id="logout-btn" class="btn-icon" title="Sair">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Content -->
+        <main class="main-content">
+            <header class="top-bar d-flex justify-content-between align-items-center position-relative">
+                <!-- System Name (Left) -->
+                <h2 class="text-white fw-bold mb-0" style="letter-spacing: 1px;">Med Park</h2>
+
+                <!-- Centered Page Title -->
+                <div class="position-absolute top-50 start-50 translate-middle w-100 text-center"
+                    style="pointer-events: none;">
+                    <h2 id="page-title" class="mb-0 text-white fw-bold">Visão Geral</h2>
+                </div>
+
+                <!-- Right Actions -->
+                <div class="actions ms-auto" style="pointer-events: auto;">
+                    <span class="date-display" id="current-date">--/--/----</span>
+                </div>
+            </header>
+
+            <div id="content-area" class="content-area">
+                <!-- Content will be injected here by JS -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- New User Modal -->
+    <div class="modal fade" id="newUserModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-light border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">Novo Usuário</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="new-user-form">
+                        <div class="mb-3">
+                            <label class="form-label">Nome Completo</label>
+                            <input type="text" id="new-name" class="form-control bg-dark text-light border-secondary"
+                                required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">CPF</label>
+                                <input type="text" id="new-cpf" class="form-control bg-dark text-light border-secondary"
+                                    required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Login</label>
+                                <input type="text" id="new-username"
+                                    class="form-control bg-dark text-light border-secondary" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" id="new-email" class="form-control bg-dark text-light border-secondary"
+                                required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Senha Inicial</label>
+                                <input type="text" id="new-password"
+                                    class="form-control bg-dark text-light border-secondary" value="Muda@123" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Perfil</label>
+                                <select id="new-role" class="form-select bg-dark text-light border-secondary">
+                                    <option value="Admin">Admin</option>
+                                    <option value="Operador">Operador</option>
+                                    <option value="Supervisor">Supervisor</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="new-active" checked>
+                            <label class="form-check-label" for="new-active">Ativar Imediatamente</label>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="button" class="btn btn-secondary me-2"
+                                data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Salvar Usuário</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Vehicle Modal -->
+    <div class="modal fade" id="mdl-new-veh" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-light border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">Novo Veículo</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="frm-new-veh">
+                        <div class="mb-3">
+                            <label class="form-label">Pesquisar Proprietário</label>
+                            <div class="input-group mb-2">
+                                <span class="input-group-text bg-dark border-secondary text-muted"><i
+                                        class="fas fa-search"></i></span>
+                                <input type="text" id="nv-owner-search"
+                                    class="form-control bg-dark text-light border-secondary"
+                                    placeholder="Nome ou CPF...">
+                            </div>
+                            <select id="nv-owner" class="form-select bg-dark text-light border-secondary" required>
+                                <option value="">Selecione...</option>
+                            </select>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Placa *</label>
+                                <input type="text" id="nv-placa"
+                                    class="form-control bg-dark text-light border-secondary uppercase-input"
+                                    placeholder="ABC1D23" maxlength="7" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Adesivo *</label>
+                                <input type="text" id="nv-adesivo"
+                                    class="form-control bg-dark text-light border-secondary" required>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Modelo *</label>
+                                <input type="text" id="nv-modelo"
+                                    class="form-control bg-dark text-light border-secondary uppercase-input" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Cor *</label>
+                                <input type="text" id="nv-cor"
+                                    class="form-control bg-dark text-light border-secondary uppercase-input" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Observações</label>
+                            <textarea id="nv-obs" class="form-control bg-dark text-light border-secondary"
+                                rows="2"></textarea>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="nv-principal">
+                            <label class="form-check-label text-warning" for="nv-principal"><i
+                                    class="fas fa-star me-1"></i> Definir como Principal</label>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar
+                                Veículo</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Vaga Modal -->
+    <div class="modal fade" id="mdl-new-vaga" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-light border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">Nova Vaga</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="frm-new-vaga">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Número da Vaga *</label>
+                                <input type="text" id="vaga-numero"
+                                    class="form-control bg-dark text-light border-secondary uppercase-input"
+                                    placeholder="Ex: T01" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo *</label>
+                                <select id="vaga-tipo" class="form-select bg-dark text-light border-secondary" required>
+                                    <option value="DIRETORIA">DIRETORIA</option>
+                                    <option value="IDOSO">IDOSO</option>
+                                    <option value="NORMAL">NORMAL</option>
+                                    <option value="PNE">PNE</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Local *</label>
+                                <select id="vaga-local" class="form-select bg-dark text-light border-secondary"
+                                    required>
+                                    <option value="EXTERNA">Externa</option>
+                                    <option value="SUBSOLO 1">Subsolo 1</option>
+                                    <option value="SUBSOLO 2">Subsolo 2</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Status</label>
+                                <input type="text" class="form-control bg-dark text-light border-secondary"
+                                    value="LIVRE" disabled readonly>
+                                <small class="text-secondary">Novas vagas iniciam como LIVRE.</small>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Observações</label>
+                                <textarea id="vaga-obs" class="form-control bg-dark text-light border-secondary"
+                                    rows="2"></textarea>
+                            </div>
+                            <div class="col-12 d-flex justify-content-end mt-3">
+                                <button type="submit" class="btn btn-success"><i class="fas fa-save me-2"></i>Salvar
+                                    Vaga</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Vaga Modal -->
+    <div class="modal fade" id="mdl-edit-vaga" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-light border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">Editar Vaga</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="frm-edit-vaga">
+                        <input type="hidden" id="edit-vaga-id">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Número da Vaga</label>
+                                <input type="text" id="edit-vaga-numero"
+                                    class="form-control bg-dark text-light border-secondary" disabled readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo *</label>
+                                <select id="edit-vaga-tipo" class="form-select bg-dark text-light border-secondary"
+                                    required>
+                                    <option value="DIRETORIA">DIRETORIA</option>
+                                    <option value="IDOSO">IDOSO</option>
+                                    <option value="NORMAL">NORMAL</option>
+                                    <option value="PNE">PNE</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Local *</label>
+                                <select id="edit-vaga-local" class="form-select bg-dark text-light border-secondary"
+                                    required>
+                                    <option value="EXTERNA">Externa</option>
+                                    <option value="SUBSOLO 1">Subsolo 1</option>
+                                    <option value="SUBSOLO 2">Subsolo 2</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Status</label>
+                                <select id="edit-vaga-status" class="form-select bg-dark text-light border-secondary"
+                                    required>
+                                    <option value="LIVRE">LIVRE</option>
+                                    <option value="OCUPADA">OCUPADA</option>
+                                    <option value="RESERVADA">RESERVADA</option>
+                                    <option value="MANUTENCAO">MANUTENCAO</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Observações</label>
+                                <textarea id="edit-vaga-obs" class="form-control bg-dark text-light border-secondary"
+                                    rows="2"></textarea>
+                            </div>
+                            <div class="col-12 d-flex justify-content-end mt-3">
+                                <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script type="module" src="db.js"></script>
+    <script type="module" src="auth.js"></script>
+    <script type="module" src="dashboard.js"></script>
+</body>
+
+</html>
